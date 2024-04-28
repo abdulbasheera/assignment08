@@ -273,4 +273,62 @@ ggplot(top_bigrams, aes(x = reorder(bigram, tf_idf), y = tf_idf, fill = presiden
   labs(x = "Bigram", y = "TF-IDF Value", title = "Top 15 Bigrams with Largest TF-IDF Values for Each President")
 
 ```
+# Exercise 04
+## Part a
+
+```{r}
+bills <- read_csv("senate_bills_114.csv") %>%
+     mutate(passed = factor(passed, labels = c("1", "0"), levels = c("1", "0")))
+
+# Count how many bills in the dataset passed
+sum(bills$passed == "1")
+
+```
+
+108 bills in the dataset passed
+
+## Part b
+```{r}
+# Set seed for reproducibility
+set.seed(20220414)
+
+# Drop the bill_number column
+bills <- select(bills, -bill_number)
+
+# Split the dataset into training and testing sets
+bills_split <- initial_split(bills, prop = 0.75, strata = passed)
+bills_train <- training(bills_split)
+bills_test <- testing(bills_split)
+
+```
+
+## Part c
+```{r}
+# Load required libraries
+install.packages("stopwords")
+install.packages("textrecipes")
+
+library(textrecipes)
+library(stopwords)
+library(tidytext)
+library(tidymodels)
+library(vip)
+
+# Create a custom list of stopwords
+custom_stopwords <- stopwords("en")
+
+# Create the text processing recipe
+text_recipe <- recipe(passed ~ description, data = bills_train) %>%
+  step_tokenize(description) %>%
+  step_stopwords(description, custom_stopwords = custom_stopwords) %>%
+  step_stem(description) %>%
+  step_tokenfilter(description, max_tokens = 200) %>%
+  step_tfidf(description)
+              
+```
+
+## Part d
+```{r}
+
+```
 
