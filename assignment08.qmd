@@ -1,0 +1,28 @@
+---
+title: "Data Science for Public Policy"
+subtitle: "Assignment 07"
+author: "Talia Stringfellow / Asad Azhar"
+execute:
+  warning: false
+format:
+  html:
+    embed-resources: true
+---
+
+### Packages
+
+```{r}
+library (tidyverse)
+library(tidymodels)
+library(lubridate)
+library(themis)
+library(yardstick)
+library(vip)
+library(kknn)
+```
+
+
+
+```{r}
+
+```
