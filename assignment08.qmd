@@ -201,6 +201,38 @@ executive_orders_bigrams <- executive_orders %>%
 
 ## Part b
 ```{r}
+# Load required libraries
+install.packages("ggraph")
+library(ggraph)
+library(igraph)
+
+# Split bigram column into word1 and word2
+bigram_split <- executive_orders_bigrams %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+
+# Filter out rows with stop words for either word of the bigram
+bigram_filtered <- bigram_split %>%
+  anti_join(stop_words, by = c("word1" = "word")) %>%
+  anti_join(stop_words, by = c("word2" = "word"))
+
+# Count the number of appearances of each bigram
+bigram_counts <- bigram_filtered %>%
+  count(word1, word2, sort = TRUE)
+
+# Filter to rows with more than 150 appearances
+bigram_150 <- bigram_counts %>%
+  filter(n > 150)
+
+# Visualize the data
+bigram_graph <- bigram_150 %>%
+  graph_from_data_frame()
+
+# Plot the relationships
+set.seed(2017)
+ggraph(bigram_graph, layout = "fr") +
+  geom_edge_link() +
+  geom_node_point() +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1)
 
 ```
 
