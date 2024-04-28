@@ -59,11 +59,9 @@ tidy(votes_pca_rec, number = 1, type = "variance") %>%
   slice_min(value, n = 5)
 
 #The first PC explains around 39% of the variance while all of 5 of them cumulatively explain 68% of the variance.
-```/Users/pristisman/Desktop/Documents/Georgetown/Spring 2024/Intro to Data Science/assignment08
 
 ## Part d
 
-```{r}
 
 # Analysing PCs
 votes_pcs <- votes_pca_rec %>%
@@ -236,4 +234,43 @@ ggraph(bigram_graph, layout = "fr") +
 
 ```
 
+## Part c
+```{r}
+
+# Merge individual word columns back into a single bigram column
+bigram_filtered <- bigram_filtered %>%
+  unite(bigram, word1, word2, sep = " ")
+
+# Count the number of appearances of each bigram-president pair
+bigram_president_counts <- bigram_filtered %>%
+  count(president, bigram)
+
+# Calculate TF-IDF
+tfidf <- bigram_president_counts %>%
+  bind_tf_idf(bigram, president, n)
+
+# View the resulting TF-IDF dataframe
+head(tfidf)
+
+```
+
+## Part d
+```{r}
+library(ggplot2)
+
+
+# Get the top 15 bigrams with the largest TF-IDF values for each president
+top_bigrams <- tfidf %>%
+  group_by(president) %>%
+  top_n(15, tf_idf) %>%
+  arrange(president, desc(tf_idf))
+
+# Plot the top bigrams for each president
+ggplot(top_bigrams, aes(x = reorder(bigram, tf_idf), y = tf_idf, fill = president)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ president, scales = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Bigram", y = "TF-IDF Value", title = "Top 15 Bigrams with Largest TF-IDF Values for Each President")
+
+```
 
