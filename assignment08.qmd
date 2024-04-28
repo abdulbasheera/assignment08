@@ -21,6 +21,7 @@ library(vip)
 library(kknn)
 library(patchwork)
 library(tidyclust)
+library(purrr)
 ```
 
 # Exercise 1
@@ -127,5 +128,58 @@ res <- tune_cluster(kmeans_wflow,
 
 res_metrics <- res %>%
   collect_metrics()
+
+```
+
+
+## Part b
+
+```{r}
+
+
+
+graph_pca_cluster <- function(df, clust) {
+  
+  # Creating the recipe for PCA
+  rec_pca <- recipe(formula = ~ .,data = df) %>%
+  step_pca(all_numeric(), id = "pca")
+  
+  # Creating recipe for kmeans
+  kmeans_rec <- recipe(formula = ~ .,data = df) %>%
+  step_select(all_numeric())
+  
+  #Completing PCA
+  votes_pca <- rec_pca %>%
+    prep() %>%
+    bake(new_data = df)
+  
+  # Creating spec for clusters
+  kmeans_spec <- k_means(num_clusters = clust) %>%
+    set_engine("stats",nstart = 100)
+  
+  #Creating workflow
+  kmeans_wflow <- workflow(
+    preprocessor = kmeans_rec,
+    spec = kmeans_spec)
+  
+  #Fitting data
+  kmeans<- kmeans_wflow %>%
+    fit(data = df)
+  
+  #Graphing PCA1 and PCA2 with color coded by cluster assigned.
+  graph <- bind_cols(
+    select(votes_pca, PC1, PC2),
+    cluster = votes_kmeans %>%
+      extract_cluster_assignment() %>%
+      pull(.cluster)
+)
+  ggplot(graph, aes(x = PC1, y = PC2, color = factor(cluster))) +
+    geom_point() +
+    labs(title = "Scatterplot of PC1 vs PC2 with Cluster Assignment",
+         x = "PC1", y = "PC2", color = "Cluster") +
+    theme_minimal()
+}
+
+graph_pca_cluster(df = votes_103, clust = 2)
 
 ```
