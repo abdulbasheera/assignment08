@@ -1,7 +1,7 @@
 ---
 title: "Data Science for Public Policy"
-subtitle: "Assignment 07"
-author: "Talia Stringfellow / Asad Azhar"
+subtitle: "Assignment 08"
+author: "Priscila Stisman / Asad Azhar"
 execute:
   warning: false
 format:
@@ -22,6 +22,7 @@ library(kknn)
 library(patchwork)
 library(tidyclust)
 library(purrr)
+library(readr)
 ```
 
 # Exercise 1
@@ -58,7 +59,7 @@ tidy(votes_pca_rec, number = 1, type = "variance") %>%
   slice_min(value, n = 5)
 
 #The first PC explains around 39% of the variance while all of 5 of them cumulatively explain 68% of the variance.
-```
+```/Users/pristisman/Desktop/Documents/Georgetown/Spring 2024/Intro to Data Science/assignment08
 
 ## Part d
 
@@ -183,3 +184,24 @@ graph_pca_cluster <- function(df, clust) {
 graph_pca_cluster(df = votes_103, clust = 2)
 
 ```
+
+
+# Exercise 03
+## Part a
+```{r}
+library(tidytext)
+
+executive_orders <- read_csv("executive-orders.csv") %>%
+  filter(!is.na(text)) # Filter out rows with missing text
+
+# Create bigrams using unnest_tokens
+executive_orders_bigrams <- executive_orders %>%
+  unnest_tokens(bigram, text, token = "ngrams", n = 2)
+```
+
+## Part b
+```{r}
+
+```
+
+
