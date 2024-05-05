@@ -23,6 +23,13 @@ library(patchwork)
 library(tidyclust)
 library(purrr)
 library(readr)
+library(tidytext)
+library(ggraph)
+library(igraph)
+library(ggplot2)
+library(textrecipes)
+library(stopwords)
+
 ```
 
 # Exercise 1
@@ -94,7 +101,6 @@ combined_plots
 
 ```
 
-
 # Exercise 2
 
 ## Part a
@@ -130,48 +136,48 @@ res_metrics <- res %>%
 
 ```
 
-
 ## Part b
 
 ```{r}
 
-
-
-graph_pca_cluster <- function(df, clust) {
+graph_pca_cluster <- function(df, clust){
   
   # Creating the recipe for PCA
-  rec_pca <- recipe(formula = ~ .,data = df) %>%
-  step_pca(all_numeric(), id = "pca")
+  rec_pca <- recipe(formula = ~ ., data = df) %>%
+    step_pca(all_numeric(), id = "pca")
   
   # Creating recipe for kmeans
-  kmeans_rec <- recipe(formula = ~ .,data = df) %>%
-  step_select(all_numeric())
+  kmeans_rec <- recipe(formula = ~ ., data = df) %>%
+    step_select(all_numeric())
   
-  #Completing PCA
-  votes_pca <- rec_pca %>%
+  # Completing PCA
+  baked_data <- rec_pca %>%
     prep() %>%
     bake(new_data = df)
   
   # Creating spec for clusters
-  kmeans_spec <- k_means(num_clusters = clust) %>%
-    set_engine("stats",nstart = 100)
+  kmeans_spec <- kmeans() %>%
+    set_engine("stats", nstart = 100) %>%
+    set_mode("unsupervised") %>%
+    set_args(centers = clust)
   
-  #Creating workflow
+  # Creating workflow
   kmeans_wflow <- workflow(
     preprocessor = kmeans_rec,
     spec = kmeans_spec)
   
-  #Fitting data
-  kmeans<- kmeans_wflow %>%
-    fit(data = df)
+  # Fitting data
+  kmeans <- kmeans_wflow %>%
+    fit(data = baked_data) # Using transformed data
   
-  #Graphing PCA1 and PCA2 with color coded by cluster assigned.
+  # Graphing PCA1 and PCA2 with color coded by cluster assigned.
   graph <- bind_cols(
-    select(votes_pca, PC1, PC2),
-    cluster = votes_kmeans %>%
+    select(baked_data, PC1, PC2),
+    cluster = kmeans %>%
       extract_cluster_assignment() %>%
       pull(.cluster)
-)
+  )
+  
   ggplot(graph, aes(x = PC1, y = PC2, color = factor(cluster))) +
     geom_point() +
     labs(title = "Scatterplot of PC1 vs PC2 with Cluster Assignment",
@@ -181,14 +187,17 @@ graph_pca_cluster <- function(df, clust) {
 
 graph_pca_cluster(df = votes_103, clust = 2)
 
+
+
+
 ```
 
-
 # Exercise 03
-## Part a
-```{r}
-library(tidytext)
 
+## Part a
+
+```{r}
+#Read Executive Orders
 executive_orders <- read_csv("executive-orders.csv") %>%
   filter(!is.na(text)) # Filter out rows with missing text
 
@@ -198,12 +207,8 @@ executive_orders_bigrams <- executive_orders %>%
 ```
 
 ## Part b
-```{r}
-# Load required libraries
-install.packages("ggraph")
-library(ggraph)
-library(igraph)
 
+```{r}
 # Split bigram column into word1 and word2
 bigram_split <- executive_orders_bigrams %>%
   separate(bigram, c("word1", "word2"), sep = " ")
@@ -235,6 +240,7 @@ ggraph(bigram_graph, layout = "fr") +
 ```
 
 ## Part c
+
 ```{r}
 
 # Merge individual word columns back into a single bigram column
@@ -245,9 +251,10 @@ bigram_filtered <- bigram_filtered %>%
 bigram_president_counts <- bigram_filtered %>%
   count(president, bigram)
 
-# Calculate TF-IDF
+# Calculate TF-IDF: TF-IDF (term frequency-inverse document frequency) is a statistical measure that evaluates how relevant a word is to a document in a collection of documents.
+
 tfidf <- bigram_president_counts %>%
-  bind_tf_idf(bigram, president, n)
+  bind_tf_idf(bigram, president, n) 
 
 # View the resulting TF-IDF dataframe
 head(tfidf)
@@ -255,8 +262,8 @@ head(tfidf)
 ```
 
 ## Part d
+
 ```{r}
-library(ggplot2)
 
 
 # Get the top 15 bigrams with the largest TF-IDF values for each president
@@ -273,7 +280,9 @@ ggplot(top_bigrams, aes(x = reorder(bigram, tf_idf), y = tf_idf, fill = presiden
   labs(x = "Bigram", y = "TF-IDF Value", title = "Top 15 Bigrams with Largest TF-IDF Values for Each President")
 
 ```
+
 # Exercise 04
+
 ## Part a
 
 ```{r}
@@ -288,6 +297,7 @@ sum(bills$passed == "1")
 108 bills in the dataset passed
 
 ## Part b
+
 ```{r}
 # Set seed for reproducibility
 set.seed(20220414)
@@ -303,22 +313,14 @@ bills_test <- testing(bills_split)
 ```
 
 ## Part c
-```{r}
-# Load required libraries
-install.packages("stopwords")
-install.packages("textrecipes")
 
-library(textrecipes)
-library(stopwords)
-library(tidytext)
-library(tidymodels)
-library(vip)
+```{r}
 
 # Create a custom list of stopwords
 custom_stopwords <- stopwords("en")
 
 # Create the text processing recipe
-text_recipe <- recipe(passed ~ description, data = bills_train) %>%
+bills_recipe <- recipe(passed ~ description, data = bills_train) %>%
   step_tokenize(description) %>%
   step_stopwords(description, custom_stopwords = custom_stopwords) %>%
   step_stem(description) %>%
@@ -328,7 +330,59 @@ text_recipe <- recipe(passed ~ description, data = bills_train) %>%
 ```
 
 ## Part d
+
 ```{r}
+# Pre processing the training data using the recipe
+bills_processed <- prep(bills_recipe) %>%
+  bake(new_data = NULL)
+
+# Re-creating the recipe with domain-specific stop words
+bills_recipe_2 <- recipe(passed ~ description, data = bills_train) %>%
+  step_tokenize(description) %>%
+  step_stopwords(description, custom_stopword_source = c("1","2","3","4","act", "addit", "bill", "certain", "congress")) %>%
+  step_stem(description) %>%
+  step_tokenfilter(description, max_tokens = 200) %>%
+  step_tfidf(description) 
+```
+
+## Part e
+
+```{r}
+# Define the logistic regression model
+logistic_reg <- logistic_reg() %>%
+  set_mode("classification") %>%
+  set_engine("glm") 
+
+# Create a workflow with the recipe and logistic specification
+bills_workflow <- workflow() %>%
+  add_recipe(bills_recipe_2) %>%
+  add_model(logistic_reg)
+
+# Fit the model on the training data
+fitted_model <- fit(bills_workflow, data = bills_train)
+```
+
+```{r}
+# Predict the class membership and class probability using the test data
+bills_predictions <- bind_cols(bills_test, 
+                      predict(object = fitted_model, new_data = bills_test, type = "prob"),
+                      predict(object = fitted_model, new_data = bills_test))
+
+# Calculate accuracy, precision, recall and the roc curve for the model
+accuracy <- accuracy(bills_predictions, truth = passed, estimate = .pred_class)
+precision <- precision(bills_predictions, truth = passed, estimate = .pred_class)
+recall <- recall(bills_predictions, truth = passed, estimate = .pred_class)
+roccurve <- roc_curve(data = bills_predictions, .pred_1, truth = passed)
+
+#Print the metrics and plot roc curve
+metrics <- bind_rows(accuracy, precision, recall)
+print(metrics)
+autoplot(roccurve)
 
 ```
 
+-   **Accuracy:** This metric indicates the overall correctness of the model's predictions. An accuracy of 96.62% suggests that the model correctly predicted the outcome for approximately 96.62% of the samples. However, it's important to note that the dataset is unbalanced, with positives representing only about 3% of all samples. As a result, the high accuracy figure may not accurately reflect the model's performance given the class imbalance.
+
+-   **Precision:** Precision measures the proportion of true positive predictions among all positive predictions made by the model. A precision of 14.29% suggests that among the instances predicted as positive, only 14.29% were actually positive. This low precision value indicates that our model is performing poorly in accurately identifying positive instances.
+
+-   **Recall:** Recall, also known as sensitivity, measures the proportion of actual positive instances that were correctly identified by the model. A recall of 10.00% suggests that the model correctly identified only 10.00% of all positive instances. This low recall value indicates that our model is performing poorly in capturing the true positive instances.
