@@ -386,3 +386,13 @@ autoplot(roccurve)
 -   **Precision:** Precision measures the proportion of true positive predictions among all positive predictions made by the model. A precision of 14.29% suggests that among the instances predicted as positive, only 14.29% were actually positive. This low precision value indicates that our model is performing poorly in accurately identifying positive instances.
 
 -   **Recall:** Recall, also known as sensitivity, measures the proportion of actual positive instances that were correctly identified by the model. A recall of 10.00% suggests that the model correctly identified only 10.00% of all positive instances. This low recall value indicates that our model is performing poorly in capturing the true positive instances.
+
+-   **ROC:** The area under the ROC curve summarizes the overall performance of the classifier across all possible threshold values. A higher AUC value (closer to 1) indicates better discrimination ability of the model. The area under the ROC curve in our model is closer to 0.5 suggesting a random classifier.
+
+*Recommendations to improve the model*
+
+1.   Address Class Imabalance: implement resampling methods to balance classes, for example, oversampling the minority class.
+
+2.  Feature Engineering: Explore additional features or transformations of existing features that could better capture underlying patterns in the data. For example, adding interaction terms, or scaling data.
+
+3.  Increase sample size: Expanding the sample size is a well-known strategy that can significantly enhance the accuracy and reliability of model estimations. However, we acknowledge that increasing the sample size may present logistical challenges or resource constraints, making it a less practical solution in some cases.
