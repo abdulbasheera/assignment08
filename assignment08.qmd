@@ -322,7 +322,7 @@ custom_stopwords <- stopwords("en")
 # Create the text processing recipe
 bills_recipe <- recipe(passed ~ description, data = bills_train) %>%
   step_tokenize(description) %>%
-  step_stopwords(description, custom_stopwords = custom_stopwords) %>%
+  step_stopwords(description, custom_stopwords = all_of(custom_stopwords)) %>%
   step_stem(description) %>%
   step_tokenfilter(description, max_tokens = 200) %>%
   step_tfidf(description)
@@ -337,12 +337,14 @@ bills_processed <- prep(bills_recipe) %>%
   bake(new_data = NULL)
 
 # Re-creating the recipe with domain-specific stop words
+custom_stopwords <- c("1", "2", "3", "4", "act", "addit", "bill", "certain", "congress")
+
 bills_recipe_2 <- recipe(passed ~ description, data = bills_train) %>%
   step_tokenize(description) %>%
-  step_stopwords(description, custom_stopword_source = c("1","2","3","4","act", "addit", "bill", "certain", "congress")) %>%
+  step_stopwords(description, custom_stopword_source = custom_stopwords) %>%
   step_stem(description) %>%
   step_tokenfilter(description, max_tokens = 200) %>%
-  step_tfidf(description) 
+  step_tfidf(description)
 ```
 
 ## Part e
