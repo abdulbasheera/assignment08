@@ -140,52 +140,50 @@ res_metrics <- res %>%
 
 ```{r}
 
-graph_pca_cluster <- function(df, clust){
+graph_pca_cluster <- function(df, clust) {
   
   # Creating the recipe for PCA
-  rec_pca <- recipe(formula = ~ ., data = df) %>%
-    step_pca(all_numeric(), id = "pca")
+  rec_pca <- recipe(formula = ~ .,data = df) %>%
+  step_pca(all_numeric(), id = "pca")
   
   # Creating recipe for kmeans
-  kmeans_rec <- recipe(formula = ~ ., data = df) %>%
-    step_select(all_numeric())
+  kmeans_rec <- recipe(formula = ~ .,data = df) %>%
+  step_select(all_numeric())
   
-  # Completing PCA
-  baked_data <- rec_pca %>%
+  #Completing PCA
+  votes_pca <- rec_pca %>%
     prep() %>%
     bake(new_data = df)
   
   # Creating spec for clusters
-  kmeans_spec <- kmeans() %>%
-    set_engine("stats", nstart = 100) %>%
-    set_mode("unsupervised") %>%
-    set_args(centers = clust)
+  kmeans_spec <- k_means(num_clusters = clust) %>%
+    set_engine("stats",nstart = 100)
   
-  # Creating workflow
+  #Creating workflow
   kmeans_wflow <- workflow(
     preprocessor = kmeans_rec,
     spec = kmeans_spec)
   
-  # Fitting data
-  kmeans <- kmeans_wflow %>%
-    fit(data = baked_data) # Using transformed data
+  #Fitting data
+  kmeans<- kmeans_wflow %>%
+    fit(data = df)
   
-  # Graphing PCA1 and PCA2 with color coded by cluster assigned.
+  #Graphing PCA1 and PCA2 with color coded by cluster assigned.
   graph <- bind_cols(
-    select(baked_data, PC1, PC2),
+    select(votes_pca, PC1, PC2),
     cluster = kmeans %>%
       extract_cluster_assignment() %>%
       pull(.cluster)
-  )
-  
+)
   ggplot(graph, aes(x = PC1, y = PC2, color = factor(cluster))) +
     geom_point() +
-    labs(title = "Scatterplot of PC1 vs PC2 with Cluster Assignment",
+    labs(title = paste("K-Means with K =", clust, "and PCA"),
          x = "PC1", y = "PC2", color = "Cluster") +
     theme_minimal()
 }
 
-graph_pca_cluster(df = votes_103, clust = 2)
+# Testing the function
+graph_pca_cluster(df = votes_103, clust = 5)
 
 
 
@@ -332,9 +330,6 @@ bills_recipe <- recipe(passed ~ description, data = bills_train) %>%
 ## Part d
 
 ```{r}
-# Pre processing the training data using the recipe
-bills_processed <- prep(bills_recipe) %>%
-  bake(new_data = NULL)
 
 # Re-creating the recipe with domain-specific stop words
 custom_stopwords <- c("1", "2", "3", "4", "act", "addit", "bill", "certain", "congress")
